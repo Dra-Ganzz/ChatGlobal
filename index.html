@@ -11,18 +11,14 @@ async function sendMessage() {
     if (!username) return alert("Isi nama dulu");
     if (!text) return;
 
-    // Kirim ke backend
     await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: username, text })
     });
 
-    // Langsung tambahkan ke chatBox tanpa nunggu reload
-    const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML += `<div><b>${username}</b>: ${text}</div>`;
-
     document.getElementById("messageInput").value = "";
+    loadMessages();
 }
 
 async function loadMessages() {
@@ -31,4 +27,7 @@ async function loadMessages() {
     document.getElementById("chatBox").innerHTML =
         msgs.map(m => `<div><b>${m.name}</b>: ${m.text}</div>`).join("");
 }
+
+// Auto load pesan tiap 2 detik
+setInterval(loadMessages, 2000);
 </script>
