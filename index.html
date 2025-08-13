@@ -1,71 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Chat Sederhana</title>
-  <style>
-    body { background:#0d1117; color:white; font-family:sans-serif; }
-    #messages { height:300px; overflow-y:auto; border:1px solid #333; padding:10px; margin:10px 0; background:#161b22; }
-    input, button { padding:8px; border-radius:5px; border:none; }
-    input { width:70%; }
-    button { background:#238636; color:white; cursor:pointer; }
-    button:hover { background:#2ea043; }
-  </style>
-</head>
-<body>
-  <h3>💬 Chat Sederhana</h3>
-  <input id="nameInput" placeholder="Nama..." />
-  <button onclick="saveName()">Simpan</button>
-  
-  <div id="messages"></div>
-  
-  <input id="messageInput" placeholder="Ketik pesan..." />
-  <button onclick="sendMessage()">Kirim</button>
+<script>
+let username = localStorage.getItem("username") || "";
 
-  <script>
-    const nameInput = document.getElementById('nameInput');
-    const messageInput = document.getElementById('messageInput');
-    const messagesDiv = document.getElementById('messages');
+function saveName() {
+    username = document.getElementById("nameInput").value;
+    localStorage.setItem("username", username);
+}
 
-    // Load nama dari localStorage
-    if(localStorage.getItem('chatName')) {
-      nameInput.value = localStorage.getItem('chatName');
-    }
+async function sendMessage() {
+    const text = document.getElementById("messageInput").value;
+    if (!username) return alert("Isi nama dulu");
+    if (!text) return;
 
-    function saveName() {
-      const name = nameInput.value.trim();
-      if(name) {
-        localStorage.setItem('chatName', name);
-        alert('Nama disimpan!');
-      }
-    }
+    // Kirim ke backend
+    await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: username, text })
+    });
 
-    async function loadMessages() {
-      const res = await fetch('/api/messages');
-      const data = await res.json();
-      messagesDiv.innerHTML = data.map(m => `<p><b>${m.name}:</b> ${m.text}</p>`).join('');
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+    // Langsung tambahkan ke chatBox tanpa nunggu reload
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML += `<div><b>${username}</b>: ${text}</div>`;
 
-    async function sendMessage() {
-      const name = localStorage.getItem('chatName');
-      const text = messageInput.value.trim();
-      if(!name) return alert('Simpan nama dulu!');
-      if(!text) return;
+    document.getElementById("messageInput").value = "";
+}
 
-      await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, text })
-      });
-
-      messageInput.value = '';
-      loadMessages();
-    }
-
-    // Ambil pesan tiap 2 detik
-    setInterval(loadMessages, 2000);
-    loadMessages();
-  </script>
-</body>
-</html>
+async function loadMessages() {
+    const res = await fetch("/api/messages");
+    const msgs = await res.json();
+    document.getElementById("chatBox").innerHTML =
+        msgs.map(m => `<div><b>${m.name}</b>: ${m.text}</div>`).join("");
+}
+</script>
