@@ -1,33 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Chat Sederhana</title>
+<style>
+  body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
+  #chatBox { background: #1e293b; padding: 10px; height: 300px; overflow-y: auto; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<h2>💬 Chat Sederhana</h2>
+<input id="nameInput" placeholder="Nama">
+<button onclick="saveName()">Simpan</button>
+<div id="chatBox"></div>
+<input id="messageInput" placeholder="Ketik pesan...">
+<button onclick="sendMessage()">Kirim</button>
+
 <script>
 let username = localStorage.getItem("username") || "";
 
 function saveName() {
-    username = document.getElementById("nameInput").value;
-    localStorage.setItem("username", username);
+  username = document.getElementById("nameInput").value;
+  localStorage.setItem("username", username);
 }
 
 async function sendMessage() {
-    const text = document.getElementById("messageInput").value;
-    if (!username) return alert("Isi nama dulu");
-    if (!text) return;
+  const text = document.getElementById("messageInput").value;
+  if (!username) return alert("Isi nama dulu");
+  if (!text) return;
 
-    await fetch("/api/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: username, text })
-    });
+  await fetch("/api/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: username, text })
+  });
 
-    document.getElementById("messageInput").value = "";
-    loadMessages();
+  document.getElementById("chatBox").innerHTML += `<div><b>${username}</b>: ${text}</div>`;
+  document.getElementById("messageInput").value = "";
 }
 
 async function loadMessages() {
-    const res = await fetch("/api/messages");
-    const msgs = await res.json();
-    document.getElementById("chatBox").innerHTML =
-        msgs.map(m => `<div><b>${m.name}</b>: ${m.text}</div>`).join("");
+  const res = await fetch("/api/messages");
+  const msgs = await res.json();
+  document.getElementById("chatBox").innerHTML =
+    msgs.map(m => `<div><b>${m.name}</b>: ${m.text}</div>`).join("");
 }
 
-// Auto load pesan tiap 2 detik
 setInterval(loadMessages, 2000);
+loadMessages();
 </script>
+</body>
+</html>
