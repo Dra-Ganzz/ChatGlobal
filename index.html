@@ -1,49 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Chat Sederhana</title>
-<style>
-  body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-  #chatBox { background: #1e293b; padding: 10px; height: 300px; overflow-y: auto; margin-bottom: 10px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Chat Sederhana</title>
 </head>
 <body>
-<h2>💬 Chat Sederhana</h2>
-<input id="nameInput" placeholder="Nama">
-<button onclick="saveName()">Simpan</button>
-<div id="chatBox"></div>
-<input id="messageInput" placeholder="Ketik pesan...">
-<button onclick="sendMessage()">Kirim</button>
+  <h2>💬 Chat</h2>
+  <input id="nameInput" placeholder="Nama">
+  <input id="messageInput" placeholder="Pesan">
+  <button onclick="sendMessage()">Kirim</button>
+  <div id="chatBox"></div>
 
 <script>
-let username = localStorage.getItem("username") || "";
-
-function saveName() {
-  username = document.getElementById("nameInput").value;
-  localStorage.setItem("username", username);
-}
-
 async function sendMessage() {
+  const name = document.getElementById("nameInput").value;
   const text = document.getElementById("messageInput").value;
-  if (!username) return alert("Isi nama dulu");
-  if (!text) return;
+
+  if (!name || !text) return alert("Nama dan pesan harus diisi!");
 
   await fetch("/api/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: username, text })
+    body: JSON.stringify({ name, text })
   });
 
-  document.getElementById("chatBox").innerHTML += `<div><b>${username}</b>: ${text}</div>`;
   document.getElementById("messageInput").value = "";
 }
 
 async function loadMessages() {
   const res = await fetch("/api/messages");
   const msgs = await res.json();
-  document.getElementById("chatBox").innerHTML =
-    msgs.map(m => `<div><b>${m.name}</b>: ${m.text}</div>`).join("");
+
+  document.getElementById("chatBox").innerHTML = msgs
+    .map(m => `<b>${m.name}</b>: ${m.text}`)
+    .join("<br>");
 }
 
 setInterval(loadMessages, 2000);
