@@ -1,8 +1,5 @@
-let messages = [];
+import messages from "./_store";
 
 export default function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.status(200).json(messages);
+    res.status(200).json(messages);
 }
-
-export { messages };
