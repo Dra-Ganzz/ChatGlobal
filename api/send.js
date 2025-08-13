@@ -1,16 +1,13 @@
-import { messages } from './messages.js';
+import messages from "./_store";
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  if (req.method === 'POST') {
-    const { name, text } = req.body;
-    if (name && text) {
-      messages.push({ name, text });
-      res.status(200).json({ success: true });
-    } else {
-      res.status(400).json({ error: 'Nama dan pesan wajib diisi' });
+export default function handler(req, res) {
+    if (req.method === "POST") {
+        const { name, text } = req.body;
+        if (!name || !text) {
+            return res.status(400).json({ error: "Name and text required" });
+        }
+        messages.push({ name, text });
+        return res.status(200).json({ success: true });
     }
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
-  }
+    res.status(405).json({ error: "Method not allowed" });
 }
