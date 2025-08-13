@@ -1,13 +1,15 @@
-import messages from "./_store";
+let messages = [];
 
 export default function handler(req, res) {
-    if (req.method === "POST") {
-        const { name, text } = req.body;
-        if (!name || !text) {
-            return res.status(400).json({ error: "Name and text required" });
-        }
-        messages.push({ name, text });
-        return res.status(200).json({ success: true });
+  if (req.method === "POST") {
+    const { name, text } = req.body;
+    if (!name || !text) {
+      return res.status(400).json({ error: "Name and text are required" });
     }
-    res.status(405).json({ error: "Method not allowed" });
+
+    messages.push({ name, text });
+    res.status(200).json({ success: true });
+  } else {
+    res.status(405).json({ error: "Method Not Allowed" });
+  }
 }
