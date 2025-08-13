@@ -1,76 +1,71 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Chat Sederhana</title>
   <style>
-    body { font-family: sans-serif; background: #0f172a; color: white; margin: 0; padding: 20px; }
-    h1 { display: flex; align-items: center; gap: 5px; font-size: 18px; }
-    input, button { padding: 8px; border-radius: 6px; border: none; }
-    input { flex: 1; background: #1e293b; color: white; }
-    button { background: #3b82f6; color: white; cursor: pointer; }
-    #chatBox { height: 300px; overflow-y: auto; border: 1px solid #334155; border-radius: 6px; padding: 10px; background: #1e293b; margin-top: 10px; }
-    .msg { margin-bottom: 5px; }
-    .msg b { color: #60a5fa; }
+    body { background:#0d1117; color:white; font-family:sans-serif; }
+    #messages { height:300px; overflow-y:auto; border:1px solid #333; padding:10px; margin:10px 0; background:#161b22; }
+    input, button { padding:8px; border-radius:5px; border:none; }
+    input { width:70%; }
+    button { background:#238636; color:white; cursor:pointer; }
+    button:hover { background:#2ea043; }
   </style>
 </head>
 <body>
-  <h1>💬 Chat Sederhana</h1>
-
-  <div style="display:flex; gap:5px; margin-bottom:10px;">
-    <input id="usernameInput" placeholder="Username" />
-    <button id="saveUser">Simpan</button>
-  </div>
-
-  <div id="chatBox"></div>
-
-  <div style="display:flex; gap:5px; margin-top:10px;">
-    <input id="messageInput" placeholder="Ketik pesan..." />
-    <button id="sendButton">Kirim</button>
-  </div>
-
-  <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
-    Backend: <code>/api/send</code> & <code>/api/messages</code>.  
-    Data hanya in-memory (reset bila server di-restart). Bisa diakses via curl dari Termux.
-  </p>
+  <h3>💬 Chat Sederhana</h3>
+  <input id="nameInput" placeholder="Nama..." />
+  <button onclick="saveName()">Simpan</button>
+  
+  <div id="messages"></div>
+  
+  <input id="messageInput" placeholder="Ketik pesan..." />
+  <button onclick="sendMessage()">Kirim</button>
 
   <script>
-    async function sendMessage() {
-      const user = localStorage.getItem('user') || 'Anon';
-      const text = document.getElementById('messageInput').value;
-      if (!text) return;
+    const nameInput = document.getElementById('nameInput');
+    const messageInput = document.getElementById('messageInput');
+    const messagesDiv = document.getElementById('messages');
 
-      await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, text })
-      });
+    // Load nama dari localStorage
+    if(localStorage.getItem('chatName')) {
+      nameInput.value = localStorage.getItem('chatName');
+    }
 
-      document.getElementById('messageInput').value = '';
-      loadMessages();
+    function saveName() {
+      const name = nameInput.value.trim();
+      if(name) {
+        localStorage.setItem('chatName', name);
+        alert('Nama disimpan!');
+      }
     }
 
     async function loadMessages() {
       const res = await fetch('/api/messages');
       const data = await res.json();
-      const chatBox = document.getElementById('chatBox');
-      chatBox.innerHTML = data.map(m => `<div class="msg"><b>${m.user}</b>: ${m.text}</div>`).join('');
-      chatBox.scrollTop = chatBox.scrollHeight;
+      messagesDiv.innerHTML = data.map(m => `<p><b>${m.name}:</b> ${m.text}</p>`).join('');
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    document.getElementById('sendButton').addEventListener('click', sendMessage);
-    document.getElementById('messageInput').addEventListener('keypress', e => {
-      if (e.key === 'Enter') sendMessage();
-    });
+    async function sendMessage() {
+      const name = localStorage.getItem('chatName');
+      const text = messageInput.value.trim();
+      if(!name) return alert('Simpan nama dulu!');
+      if(!text) return;
 
-    document.getElementById('saveUser').addEventListener('click', () => {
-      const name = document.getElementById('usernameInput').value;
-      if (name) localStorage.setItem('user', name);
-    });
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, text })
+      });
 
-    loadMessages();
+      messageInput.value = '';
+      loadMessages();
+    }
+
+    // Ambil pesan tiap 2 detik
     setInterval(loadMessages, 2000);
+    loadMessages();
   </script>
 </body>
 </html>
