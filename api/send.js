@@ -1,22 +1,16 @@
-let messages = global.messages || [];
-global.messages = messages;
+import { messages } from './messages.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   if (req.method === 'POST') {
-    const { user, text } = req.body;
-    if (!user || !text) return res.status(400).json({ error: 'User & text wajib diisi' });
-
-    messages.push({ user, text, time: Date.now() });
-    return res.status(200).json({ success: true });
+    const { name, text } = req.body;
+    if (name && text) {
+      messages.push({ name, text });
+      res.status(200).json({ success: true });
+    } else {
+      res.status(400).json({ error: 'Nama dan pesan wajib diisi' });
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
-
-  res.status(405).json({ error: 'Method not allowed' });
-      }
+}
