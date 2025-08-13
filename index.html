@@ -1,187 +1,76 @@
-<!--
-Project structure (copy as-is):
-
-/ (project root)
-├── index.html                # Frontend UI (pure HTML/JS)
-├── api/
-│   ├── send.js               # POST: kirim pesan
-│   └── messages.js           # GET: ambil pesan
-└── vercel.json               # (opsional) enforce CORS & clean headers
-
-Deploy: vercel deploy --prod
---><!-- ======================= index.html ======================= --><!doctype html>
-
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chat Sederhana — Vercel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Sederhana</title>
   <style>
-    :root { --bg:#0b1020; --card:#141b34; --muted:#9aa4bf; --text:#e7ecff; }
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:var(--text)}
-    .wrap{max-width:780px;margin:0 auto;padding:16px;display:grid;gap:12px}
-    header{display:flex;align-items:center;justify-content:space-between}
-    header h1{font-size:18px;margin:0}
-    .card{background:var(--card);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.25);padding:12px}
-    #log{height:60vh;overflow:auto;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth}
-    .msg{display:flex;gap:10px;align-items:flex-start}
-    .bubble{padding:10px 12px;border-radius:14px;max-width:80%;background:#1e274b}
-    .me .bubble{background:#2c3a7a}
-    .meta{font-size:11px;color:var(--muted);margin-top:4px}
-    .row{display:flex;gap:8px}
-    input,button{border-radius:12px;border:1px solid transparent;padding:10px 12px;font-size:15px;outline:none}
-    input{flex:1;background:#111733;color:var(--text)}
-    button{background:#3e63dd;color:#fff;cursor:pointer}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .topbar{display:flex;gap:8px}
+    body { font-family: sans-serif; background: #0f172a; color: white; margin: 0; padding: 20px; }
+    h1 { display: flex; align-items: center; gap: 5px; font-size: 18px; }
+    input, button { padding: 8px; border-radius: 6px; border: none; }
+    input { flex: 1; background: #1e293b; color: white; }
+    button { background: #3b82f6; color: white; cursor: pointer; }
+    #chatBox { height: 300px; overflow-y: auto; border: 1px solid #334155; border-radius: 6px; padding: 10px; background: #1e293b; margin-top: 10px; }
+    .msg { margin-bottom: 5px; }
+    .msg b { color: #60a5fa; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>💬 Chat Sederhana</h1>
-      <div class="topbar card">
-        <input id="name" placeholder="Nama kamu" />
-        <button id="save">Simpan</button>
-      </div>
-    </header><div id="log" class="card"></div>
+  <h1>💬 Chat Sederhana</h1>
 
-<div class="row card">
-  <input id="text" placeholder="Tulis pesan…" />
-  <button id="send">Kirim</button>
-</div>
+  <div style="display:flex; gap:5px; margin-bottom:10px;">
+    <input id="usernameInput" placeholder="Username" />
+    <button id="saveUser">Simpan</button>
+  </div>
 
-<small class="card" style="color:var(--muted)">Backend: <code>/api/send</code> & <code>/api/messages</code>. Data hanya in-memory (reset bila server di-restart). Dapat diakses via curl dari Termux.</small>
+  <div id="chatBox"></div>
 
-  </div>  <script>
-    const API_BASE = '';
-    const el = (id) => document.getElementById(id);
-    const log = el('log');
+  <div style="display:flex; gap:5px; margin-top:10px;">
+    <input id="messageInput" placeholder="Ketik pesan..." />
+    <button id="sendButton">Kirim</button>
+  </div>
 
-    // Load name
-    el('name').value = localStorage.getItem('chat_name') || '';
-    el('save').onclick = () => localStorage.setItem('chat_name', el('name').value.trim());
+  <p style="font-size:12px; color:#94a3b8; margin-top:10px;">
+    Backend: <code>/api/send</code> & <code>/api/messages</code>.  
+    Data hanya in-memory (reset bila server di-restart). Bisa diakses via curl dari Termux.
+  </p>
 
-    function fmt(ts){
-      const d = new Date(ts);
-      return d.toLocaleString();
+  <script>
+    async function sendMessage() {
+      const user = localStorage.getItem('user') || 'Anon';
+      const text = document.getElementById('messageInput').value;
+      if (!text) return;
+
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, text })
+      });
+
+      document.getElementById('messageInput').value = '';
+      loadMessages();
     }
 
-    function addMsg(m){
-      const me = (m.user || 'anon') === (localStorage.getItem('chat_name')||'');
-      const div = document.createElement('div');
-      div.className = 'msg' + (me ? ' me':'');
-      div.innerHTML = `
-        <div class="bubble">
-          <strong>${(m.user||'anon').replace(/</g,'&lt;')}</strong><br/>
-          <span>${(m.text||'').replace(/</g,'&lt;')}</span>
-          <div class="meta">${fmt(m.ts)}</div>
-        </div>`;
-      log.appendChild(div);
-      log.scrollTop = log.scrollHeight;
+    async function loadMessages() {
+      const res = await fetch('/api/messages');
+      const data = await res.json();
+      const chatBox = document.getElementById('chatBox');
+      chatBox.innerHTML = data.map(m => `<div class="msg"><b>${m.user}</b>: ${m.text}</div>`).join('');
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    let lastTs = 0;
-    async function load(){
-      try{
-        const res = await fetch(`${API_BASE}/api/messages?since=${lastTs}`);
-        const data = await res.json();
-        (data.messages||[]).forEach(m=>{ addMsg(m); lastTs = Math.max(lastTs, m.ts||0); });
-      }catch(e){ /* silent */ }
-    }
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendMessage();
+    });
 
-    async function send(){
-      const user = (el('name').value||'').trim() || 'anon';
-      const text = (el('text').value||'').trim();
-      if(!text) return;
-      el('send').disabled = true;
-      try{
-        const res = await fetch(`${API_BASE}/api/send`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({user,text})
-        });
-        const data = await res.json();
-        if(data.ok){ el('text').value=''; await load(); }
-      }finally{ el('send').disabled = false; }
-    }
+    document.getElementById('saveUser').addEventListener('click', () => {
+      const name = document.getElementById('usernameInput').value;
+      if (name) localStorage.setItem('user', name);
+    });
 
-    el('send').onclick = send;
-    el('text').addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
-
-    load();
-    setInterval(load, 2000);
-  </script></body>
-</html><!-- ======================= api/messages.js ======================= --><script type="text/plain" data-filename="api/messages.js">
-let MESSAGES = global.MESSAGES || (global.MESSAGES = []);
-
-function setCORS(res){
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-export default function handler(req, res){
-  setCORS(res);
-  if(req.method === 'OPTIONS') return res.status(204).end();
-
-  const since = Number(req.query.since || 0);
-  const messages = MESSAGES.filter(m => !since || (m.ts && m.ts > since));
-  res.status(200).json({ ok: true, messages });
-}
-</script><!-- ======================= api/send.js ======================= --><script type="text/plain" data-filename="api/send.js">
-let MESSAGES = global.MESSAGES || (global.MESSAGES = []);
-
-function setCORS(res){
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-export default async function handler(req, res){
-  setCORS(res);
-  if(req.method === 'OPTIONS') return res.status(204).end();
-  if(req.method !== 'POST') return res.status(405).json({ ok:false, error:'Use POST' });
-
-  try{
-    const { user = 'anon', text = '' } = req.body || {};
-    const msg = {
-      id: Math.random().toString(36).slice(2),
-      user: String(user).slice(0,40),
-      text: String(text).slice(0,2000),
-      ts: Date.now()
-    };
-    MESSAGES.push(msg);
-    if(MESSAGES.length > 500) MESSAGES = MESSAGES.slice(-500);
-    res.status(200).json({ ok: true, msg });
-  }catch(e){
-    res.status(400).json({ ok:false, error: 'Bad JSON body' });
-  }
-}
-</script><!-- ======================= vercel.json (opsional) ======================= --><script type="application/json" data-filename="vercel.json">
-{
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
-    }
-  ]
-}
-</script>            }
-        }
-
-        // Event listeners
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // Muat pesan saat halaman dimuat
-        loadMessages();
-    </script>
+    loadMessages();
+    setInterval(loadMessages, 2000);
+  </script>
 </body>
-    </html>
+</html>
